@@ -1,0 +1,320 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { X, Send, Camera, Upload, Loader2, Trash2, StopCircle, UserCheck } from 'lucide-react';
+import { ticketService } from '../services/ticketService';
+import useCamera from '../hooks/useCamera';
+import { useAuth } from '../../../context/AuthContext';
+
+const SubmitReportModal = ({ ticket, report, onSuccess, onClose }) => {
+  const { user } = useAuth();
+  const teamLeaderName = user?.name || user?.full_name || '';
+  const [form, setForm] = useState({
+    description: report?.description || '',
+    action_taken: report?.action_taken || '',
+    notes: report?.notes || '',
+    duration_hours: report?.duration_hours || '',
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const fileInputRef = useRef(null);
+  const errorRef = useRef(null);
+
+  const {
+    isCameraOpen, devices, selectedDevice, setSelectedDevice,
+    image, setImage, videoRef, canvasRef,
+    startCamera, stopCamera, takePicture, resetImage,
+  } = useCamera();
+
+  useEffect(() => () => stopCamera(), [stopCamera]);
+
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [error]);
+
+  const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => setImage(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const base64ToFile = (base64, filename = 'bukti.jpg') => {
+    if (!base64) return null;
+    let mime = 'image/jpeg';
+    let bstr = '';
+
+    if (base64.includes(',')) {
+      const arr = base64.split(',');
+      const match = arr[0].match(/:(.*?);/);
+      if (match) mime = match[1];
+      bstr = atob(arr[1]);
+    } else {
+      bstr = atob(base64);
+    }
+
+    let n = bstr.length;
+    const u8 = new Uint8Array(n);
+    while (n--) u8[n] = bstr.charCodeAt(n);
+    return new File([u8], filename, { type: mime });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!image) {
+      setError('Foto bukti pekerjaan wajib diisi.');
+      return;
+    }
+    if (form.description.trim().length < 10) {
+      setError('Deskripsi masalah minimal 10 karakter.');
+      return;
+    }
+    if (form.action_taken.trim().length < 10) {
+      setError('Tindakan yang dilakukan minimal 10 karakter.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      // Mengikuti Schema Multipart/form-data Swagger Backend Baru
+      const fd = new FormData();
+      fd.append('description', form.description);
+      fd.append('action_taken', form.action_taken);
+      fd.append('duration_hours', Number(form.duration_hours));
+      if (form.notes) fd.append('notes', form.notes);
+
+      const imageFile = base64ToFile(image, `bukti-tiket-${ticket.id}.jpg`);
+      fd.append('image', imageFile);
+
+      const updated = await ticketService.submitReport(ticket.id, fd);
+      onSuccess(updated);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Gagal mengirim laporan. Coba lagi.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const inputCls = "w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-800 dark:bg-stone-800 dark:text-white text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none transition-all";
+  const inputDisabledCls = "w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-100 dark:bg-stone-800/60 text-stone-500 dark:text-stone-400 text-sm cursor-not-allowed";
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-white dark:bg-stone-900 rounded-3xl shadow-2xl border border-stone-200 dark:border-stone-800 w-full max-w-lg max-h-[92vh] flex flex-col">
+        
+        <div className="p-5 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+              <Send size={16} className="text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-stone-900 dark:text-white">
+                {ticket.status === 'Rejected' ? 'Submit Ulang Laporan (Revisi)' : 'Submit Laporan Perbaikan'}
+              </h3>
+              <p className="text-xs text-stone-400 truncate max-w-[220px]">{ticket.machine_name}</p>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            onClick={() => { stopCamera(); onClose(); }} 
+            className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <form id="submit-report-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-4">
+          {error && (
+            <div ref={errorRef} className="px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
+          {ticket.status === 'Rejected' && report && (
+            <div className="px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 text-xs">
+              Data di bawah ini diisi otomatis dari laporan sebelumnya yang ditolak. Silakan perbaiki bagian yang diminta, lalu unggah ulang foto bukti pekerjaan.
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5 flex items-center gap-1">
+              <UserCheck size={14} className="text-blue-500" /> Penanggung Jawab (Leader)
+            </label>
+            <input
+              type="text"
+              value={teamLeaderName}
+              disabled
+              readOnly
+              className={inputDisabledCls}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">
+              Deskripsi Masalah <span className="text-red-500">*</span>
+            </label>
+            <textarea 
+              name="description" 
+              required 
+              minLength={10}
+              rows={3} 
+              value={form.description} 
+              onChange={handleChange} 
+              placeholder="Jelaskan masalah yang ditemukan... (min. 10 karakter)" 
+              className={`${inputCls} resize-none`} 
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">
+              Tindakan yang Dilakukan <span className="text-red-500">*</span>
+            </label>
+            <textarea 
+              name="action_taken" 
+              required 
+              minLength={10}
+              rows={3} 
+              value={form.action_taken} 
+              onChange={handleChange} 
+              placeholder="Jelaskan tindakan perbaikan yang telah dilakukan... (min. 10 karakter)" 
+              className={`${inputCls} resize-none`} 
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">
+              Durasi Pengerjaan (jam) <span className="text-red-500">*</span>
+            </label>
+            <input 
+              type="number" 
+              name="duration_hours" 
+              required 
+              min="0.1" 
+              step="0.1" 
+              value={form.duration_hours} 
+              onChange={handleChange} 
+              placeholder="Contoh: 2.5" 
+              className={inputCls} 
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">
+              Catatan <span className="text-stone-300">(opsional)</span>
+            </label>
+            <input 
+              type="text" 
+              name="notes" 
+              value={form.notes} 
+              onChange={handleChange} 
+              placeholder="Rekomendasi, temuan lain, dll..." 
+              className={inputCls} 
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">
+              Foto Bukti Pekerjaan <span className="text-red-500">*</span>
+            </label>
+
+            {image ? (
+              <div className="space-y-2">
+                <div className="relative rounded-xl overflow-hidden border border-stone-200 dark:border-stone-700">
+                  <img src={image} alt="Preview bukti" className="w-full h-52 object-cover" />
+                  <button 
+                    type="button" 
+                    onClick={() => { resetImage(); stopCamera(); }}
+                    className="absolute top-2 right-2 p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors" 
+                    title="Hapus foto"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {isCameraOpen && (
+                  <div className="mb-3 space-y-2">
+                    <div className="relative rounded-xl overflow-hidden bg-black border border-stone-700">
+                      <video ref={videoRef} autoPlay playsInline muted className="w-full h-52 object-cover" />
+                    </div>
+                    <div className="flex gap-2">
+                      <button 
+                        type="button" 
+                        onClick={takePicture}
+                        className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-all"
+                      >
+                        <Camera size={16} /> Ambil Foto
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={stopCamera}
+                        className="px-4 py-2.5 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-xl font-bold text-sm transition-all"
+                      >
+                        <StopCircle size={16} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {!isCameraOpen && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <button 
+                      type="button" 
+                      onClick={startCamera}
+                      className="flex flex-col items-center justify-center gap-2 py-6 rounded-xl border-2 border-dashed border-stone-200 dark:border-stone-700 hover:border-blue-400 transition-all"
+                    >
+                      <Camera size={24} className="text-stone-400" />
+                      <span className="text-xs font-bold text-stone-500">Buka Kamera</span>
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex flex-col items-center justify-center gap-2 py-6 rounded-xl border-2 border-dashed border-stone-200 dark:border-stone-700 hover:border-blue-400 transition-all"
+                    >
+                      <Upload size={24} className="text-stone-400" />
+                      <span className="text-xs font-bold text-stone-500">Upload File</span>
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+            <canvas ref={canvasRef} className="hidden" />
+          </div>
+        </form>
+
+        <div className="p-5 border-t border-stone-100 dark:border-stone-800 flex gap-3 shrink-0">
+          <button 
+            type="button" 
+            onClick={() => { stopCamera(); onClose(); }}
+            className="flex-1 px-4 py-3 border border-stone-200 dark:border-stone-700 rounded-xl font-bold text-stone-500 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all text-sm"
+          >
+            Batal
+          </button>
+          <button 
+            type="submit" 
+            form="submit-report-form"
+            disabled={isSubmitting || !image}
+            className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? (
+              <><Loader2 size={14} className="animate-spin" /> Mengirim...</>
+            ) : (
+              <><Send size={14} /> Kirim Laporan</>
+            )}
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+};
+
+export default SubmitReportModal;

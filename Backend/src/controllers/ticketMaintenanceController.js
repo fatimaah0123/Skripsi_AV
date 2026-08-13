@@ -96,7 +96,8 @@ const ticketMaintenanceController = {
     }
   },
 
-  // Fitur baru: admin ubah/tambah/hapus leader & member saat tiket InProgress
+  // GANTI (alur baru): admin ubah/tambah/hapus leader & member saat tiket masih Assigned
+  // (sebelum leader menekan tombol mulai/InProgress)
   patchManageAssignments: async (req, res, next) => {
     try {
       const { id } = req.params;
@@ -184,7 +185,8 @@ const ticketMaintenanceController = {
     }
   },
 
-  // Fitur 5: admin menghapus tiket yang belum ditugaskan
+  // GANTI (alur baru): admin menghapus tiket selama belum InProgress
+  // (WaitingAssignment atau Assigned)
   deleteTicket: async (req, res, next) => {
     try {
       const { id } = req.params;

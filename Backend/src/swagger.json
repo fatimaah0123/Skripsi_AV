@@ -1576,7 +1576,7 @@
       "get": {
         "tags": ["Ticket Maintenance"],
         "summary": "Ambil semua tiket",
-        "description": "Admin mendapat semua tiket. Engineer hanya mendapat tiket di mana dia berperan sebagai **Leader** (tiket tidak muncul di daftar Member).",
+        "description": "Admin mendapat semua tiket. Engineer mendapat tiket di mana dia terdaftar sebagai **Leader maupun Member**. Hak untuk memulai (`/start`) dan submit laporan (`/submit`) tetap eksklusif milik Leader — Member yang muncul di daftar ini bersifat lihat saja (read-only).",
         "security": [
           {
             "BearerAuth": []
@@ -1676,7 +1676,7 @@
       "delete": {
         "tags": ["Ticket Maintenance"],
         "summary": "Hapus tiket",
-        "description": "Admin menghapus tiket yang belum ditugaskan / tidak diperlukan lagi. Hanya diizinkan ketika status tiket masih `WaitingAssignment`.",
+        "description": "Admin menghapus tiket yang belum mulai dikerjakan / tidak diperlukan lagi. Diizinkan ketika status tiket masih `WaitingAssignment` atau `Assigned` (belum `InProgress`). Kalau tiket sudah pernah ditugaskan (`Assigned`), relasi Leader/Member ikut dihapus.",
         "security": [
           {
             "BearerAuth": []
@@ -1715,7 +1715,7 @@
             }
           },
           "400": {
-            "description": "Status tiket bukan WaitingAssignment sehingga tidak boleh dihapus",
+            "description": "Status tiket bukan WaitingAssignment/Assigned sehingga tidak boleh dihapus",
             "content": {
               "application/json": {
                 "schema": {
@@ -1723,7 +1723,7 @@
                 },
                 "example": {
                   "status": "fail",
-                  "message": "Status tiket harus WaitingAssignment"
+                  "message": "Status tiket harus WaitingAssignment atau Assigned"
                 }
               }
             }
@@ -1744,7 +1744,7 @@
       "patch": {
         "tags": ["Ticket Maintenance"],
         "summary": "Tugaskan leader & member engineer ke tiket",
-        "description": "Admin menugaskan 1 orang engineer sebagai Leader dan (opsional) beberapa engineer lain sebagai Member, sekaligus bisa menambahkan catatan sebelum pekerjaan dimulai. Status tiket harus `WaitingAssignment`, akan berubah menjadi `Assigned`. Hanya Leader yang dapat memulai (`/start`) dan submit (`/submit`) tiket; tiket hanya akan muncul di daftar tiket milik Leader. Leader dapat menambahkan Member lagi saat memanggil `/start`, dan Admin dapat mengganti/menambah/menghapus Leader & Member melalui `/assignments` setelah tiket `InProgress`.",
+        "description": "Admin menugaskan 1 orang engineer sebagai Leader dan (opsional) beberapa engineer lain sebagai Member, sekaligus bisa menambahkan catatan sebelum pekerjaan dimulai. Status tiket harus `WaitingAssignment`, akan berubah menjadi `Assigned`. Hanya Leader yang dapat memulai (`/start`) dan submit (`/submit`) tiket; tiket hanya akan muncul di daftar tiket milik Leader. Leader dapat menambahkan Member lagi saat memanggil `/start`, dan selama tiket masih `Assigned` (sebelum Leader memulai pengerjaan), Admin dapat mengganti/menambah/menghapus Leader & Member melalui `/assignments`.",
         "security": [
           {
             "BearerAuth": []
@@ -1931,8 +1931,8 @@
     "/api/ticket-maintenance/{id}/assignments": {
       "patch": {
         "tags": ["Ticket Maintenance"],
-        "summary": "Kelola leader & member tiket yang sedang berjalan",
-        "description": "Admin dapat mengganti Leader, menambahkan Member baru, dan/atau menghapus Member dari tiket yang statusnya `InProgress` — misalnya karena leader atau member sedang sakit dan perlu digantikan. Minimal salah satu dari `leader_id`, `add_member_ids`, atau `remove_member_ids` harus diisi. Status seluruh engineer yang terdampak (leader/member lama & baru) akan disinkronkan: kembali ke `Active` jika tidak memiliki tiket `InProgress` lain, atau tetap/menjadi `Onduty` jika masih ada. Status mesin juga disinkronkan ulang.",
+        "summary": "Kelola leader & member tiket yang belum mulai dikerjakan",
+        "description": "Admin dapat mengganti Leader, menambahkan Member baru, dan/atau menghapus Member dari tiket yang statusnya `Assigned` — yaitu sebelum Leader menekan tombol mulai pengerjaan (`/start`) — misalnya karena leader atau member sedang sakit dan perlu digantikan. Setelah tiket berstatus `InProgress`, penugasan tidak bisa diubah lagi melalui endpoint ini. Minimal salah satu dari `leader_id`, `add_member_ids`, atau `remove_member_ids` harus diisi. Status seluruh engineer yang terdampak (leader/member lama & baru) akan disinkronkan, begitu juga status mesin.",
         "security": [
           {
             "BearerAuth": []
@@ -2032,7 +2032,7 @@
             }
           },
           "400": {
-            "description": "Tidak ada field yang diisi, engineer tidak valid, atau status tiket bukan InProgress",
+            "description": "Tidak ada field yang diisi, engineer tidak valid, atau status tiket bukan Assigned",
             "content": {
               "application/json": {
                 "schema": {
@@ -2040,7 +2040,7 @@
                 },
                 "example": {
                   "status": "fail",
-                  "message": "Status tiket harus InProgress"
+                  "message": "Status tiket harus Assigned"
                 }
               }
             }

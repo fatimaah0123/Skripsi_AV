@@ -194,14 +194,17 @@ const ticketMaintenanceService = {
 
     const params = [];
 
-    // Engineer hanya melihat tiket di mana dia adalah Leader
+    // GANTI (alur baru): Engineer sekarang melihat tiket di mana dia terdaftar sebagai
+    // Leader ATAU Member (dulu cuma Leader) — supaya Member juga bisa menemukan tiket yang
+    // ditugaskan kepadanya lewat halaman daftar. Hak submit laporan tetap eksklusif milik
+    // Leader (diatur di verifyLeader saat startTicket & submitTicket), jadi Member yang lihat
+    // tiket ini di daftarnya tetap read-only.
     if (role !== "Admin") {
       query += `
         WHERE EXISTS (
           SELECT 1 FROM maintenance_ticket_assignments mta_self
           WHERE mta_self.maintenance_ticket_id = mt.id
           AND mta_self.user_id = $1
-          AND mta_self.role = 'Leader'
         )
       `;
       params.push(user_id);
@@ -403,13 +406,14 @@ const ticketMaintenanceService = {
     }
   },
 
-  // Fitur baru: admin ubah/tambah/hapus leader & member saat tiket InProgress
-  // (misal leader/member sedang sakit dan perlu digantikan)
+  // GANTI (alur baru): admin ubah/tambah/hapus leader & member saat tiket masih Assigned
+  // (misal leader/member sedang sakit dan perlu digantikan) — SEBELUM leader menekan /start.
+  // Begitu tiket InProgress, penugasan tidak boleh diubah lagi.
   manageAssignments: async (
     id,
     { leader_id, add_member_ids = [], remove_member_ids = [] },
   ) => {
-    await verifyStatus(id, "InProgress");
+    await verifyStatus(id, "Assigned");
 
     const client = await pool.connect();
 
@@ -705,24 +709,45 @@ const ticketMaintenanceService = {
     return rows[0];
   },
 
-  // Fitur 5: admin hapus tiket yang belum sempat ditugaskan / tidak diperlukan lagi
+  // GANTI (alur baru): admin bisa hapus tiket selama belum InProgress — baik yang belum
+  // ditugaskan (WaitingAssignment) maupun yang sudah ditugaskan tapi teknisi belum mulai
+  // mengerjakan (Assigned). Kalau tiket sudah Assigned, baris assignment (leader & member)
+  // ikut dibersihkan dalam transaksi yang sama supaya tidak ada data nyangkut.
   deleteTicket: async (id) => {
-    await verifyStatus(id, "WaitingAssignment");
+    await verifyStatus(id, ["WaitingAssignment", "Assigned"]);
 
-    const { rows } = await pool.query(
-      `
-      DELETE FROM maintenance_tickets
-      WHERE id = $1
-      RETURNING id
-      `,
-      [id],
-    );
+    const client = await pool.connect();
 
-    if (!rows.length) {
-      throw new NotFoundError("Tiket tidak ditemukan");
+    try {
+      await client.query("BEGIN");
+
+      await client.query(
+        `DELETE FROM maintenance_ticket_assignments WHERE maintenance_ticket_id = $1`,
+        [id],
+      );
+
+      const { rows } = await client.query(
+        `
+        DELETE FROM maintenance_tickets
+        WHERE id = $1
+        RETURNING id
+        `,
+        [id],
+      );
+
+      if (!rows.length) {
+        throw new NotFoundError("Tiket tidak ditemukan");
+      }
+
+      await client.query("COMMIT");
+
+      return rows[0];
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
     }
-
-    return rows[0];
   },
 
   // Endpoint khusus: detail laporan maintenance (report + seluruh foto)
