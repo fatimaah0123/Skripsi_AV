@@ -3,20 +3,30 @@ import { Pencil, Trash2, AlertTriangle, MapPin, Calendar } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 
 const StatusBadge = ({ status }) => {
-  const isActive = status === 'Active';
+  // Disamakan dengan STATUS_COLOR di TrendCard.jsx (chart "Status Mesin Industri")
+  // supaya warna status mesin konsisten di seluruh aplikasi, bukan cuma Active/tidak-Active.
+  const config = {
+    Active: {
+      className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+      dot: 'bg-green-500 animate-pulse',
+    },
+    Maintenance: {
+      className: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+      dot: 'bg-yellow-500',
+    },
+    Onduty: {
+      className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+      dot: 'bg-blue-500',
+    },
+  };
+  const current = config[status] || {
+    className: 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400',
+    dot: 'bg-stone-400',
+  };
+
   return (
-    <div
-      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${
-        isActive
-          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-          : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-      }`}
-    >
-      <div
-        className={`w-1.5 h-1.5 rounded-full ${
-          isActive ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
-        }`}
-      />
+    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${current.className}`}>
+      <div className={`w-1.5 h-1.5 rounded-full ${current.dot}`} />
       {status}
     </div>
   );
@@ -176,7 +186,18 @@ const MachineCard = ({ machine, isAdmin, onEdit, onDeleteClick, onSelectMachine 
   </div>
 );
 
-const MachineTable = ({ machines = [], onEdit, onDeleteClick, onSelectMachine }) => {
+const MachineTable = ({
+  machines = [],
+  onEdit,
+  onDeleteClick,
+  onSelectMachine,
+  // Props pagination — disamakan modelnya dengan footer di MaintenanceHistory.jsx
+  totalItems = machines.length,
+  startIndex = 0,
+  currentPage = 1,
+  totalPages = 1,
+  onPageChange = () => {},
+}) => {
   const { isAdmin } = useAuth();
 
   if (machines.length === 0) {
@@ -189,17 +210,52 @@ const MachineTable = ({ machines = [], onEdit, onDeleteClick, onSelectMachine })
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-3 sm:hidden">
-        {machines.map((machine) => (
-          <MachineCard
-            key={machine.id}
-            machine={machine}
-            isAdmin={isAdmin}
-            onEdit={onEdit}
-            onDeleteClick={onDeleteClick}
-            onSelectMachine={onSelectMachine}
-          />
-        ))}
+      <div className="sm:hidden space-y-3">
+        <div className="grid grid-cols-1 gap-3">
+          {machines.map((machine) => (
+            <MachineCard
+              key={machine.id}
+              machine={machine}
+              isAdmin={isAdmin}
+              onEdit={onEdit}
+              onDeleteClick={onDeleteClick}
+              onSelectMachine={onSelectMachine}
+            />
+          ))}
+        </div>
+
+        {/* Footer pagination mobile — model sama dgn versi desktop di bawah */}
+        {totalItems > 0 && (
+          <div className="px-4 py-3 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl flex flex-col items-center gap-2.5">
+            <p className="text-xs text-stone-400">
+              <span className="font-bold text-stone-600 dark:text-stone-300">{startIndex + 1}–{Math.min(startIndex + machines.length, totalItems)}</span> dari{' '}
+              <span className="font-bold text-stone-600 dark:text-stone-300">{totalItems}</span> mesin
+            </p>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => onPageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold text-stone-500 dark:text-stone-400 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  Sebelumnya
+                </button>
+                <span className="text-xs font-bold text-stone-500 dark:text-stone-400 px-1">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onPageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold text-stone-500 dark:text-stone-400 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  Berikutnya
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="hidden sm:block bg-white dark:bg-stone-900 rounded-2xl shadow-sm border border-stone-200 dark:border-stone-800 overflow-hidden">
@@ -232,7 +288,7 @@ const MachineTable = ({ machines = [], onEdit, onDeleteClick, onSelectMachine })
                   className="hover:bg-blue-50/40 dark:hover:bg-blue-900/20 transition-colors cursor-pointer group"
                 >
                   <td className="px-4 lg:px-6 py-4 text-center text-sm text-stone-500 dark:text-stone-400">
-                    {index + 1}
+                    {startIndex + index + 1}
                   </td>
                   <td className="px-4 lg:px-6 py-4 max-w-[220px]">
                     <div className="text-xs font-bold text-blue-500 mb-0.5">{machine.code}</div>
@@ -277,6 +333,66 @@ const MachineTable = ({ machines = [], onEdit, onDeleteClick, onSelectMachine })
             </tbody>
           </table>
         </div>
+
+        {/* Footer pagination — model & tampilan disamakan dgn MaintenanceHistory.jsx */}
+        {totalItems > 0 && (
+          <div className="px-6 py-4 bg-stone-50 dark:bg-stone-800/30 border-t border-stone-100 dark:border-stone-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <p className="text-xs text-stone-400">
+              Menampilkan <span className="font-bold text-stone-600 dark:text-stone-300">{startIndex + 1}–{Math.min(startIndex + machines.length, totalItems)}</span> dari{' '}
+              <span className="font-bold text-stone-600 dark:text-stone-300">{totalItems}</span> mesin
+            </p>
+
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => onPageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold text-stone-500 dark:text-stone-400 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  Sebelumnya
+                </button>
+
+                <div className="flex items-center gap-1 px-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((page) => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1)
+                    .reduce((acc, page, idx, arr) => {
+                      if (idx > 0 && page - arr[idx - 1] > 1) acc.push('ellipsis-' + page);
+                      acc.push(page);
+                      return acc;
+                    }, [])
+                    .map((page) =>
+                      typeof page === 'string' ? (
+                        <span key={page} className="px-1.5 text-xs text-stone-400">…</span>
+                      ) : (
+                        <button
+                          key={page}
+                          type="button"
+                          onClick={() => onPageChange(page)}
+                          className={`min-w-[28px] h-7 px-1 rounded-lg text-xs font-bold transition-all ${
+                            page === currentPage
+                              ? 'bg-blue-600 text-white'
+                              : 'text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      )
+                    )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => onPageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold text-stone-500 dark:text-stone-400 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  Berikutnya
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </>
   );

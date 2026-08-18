@@ -22,8 +22,8 @@ const getImageUrl = (path) => {
 };
 
 const InfoRow = ({ label, value, className = '' }) => (
-  <div className="p-4 bg-stone-50 dark:bg-stone-800/50 rounded-xl">
-    <p className="text-xs text-stone-400 font-medium mb-1">{label}</p>
+  <div className="p-4 bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700/60 border-l-[3px] border-l-blue-400 dark:border-l-blue-500 rounded-xl">
+    <p className="text-[10px] text-stone-500 dark:text-stone-400 font-bold uppercase tracking-wider mb-1.5">{label}</p>
     <p className={`text-sm font-semibold text-stone-800 dark:text-stone-200 ${className}`}>{value || '—'}</p>
   </div>
 );
@@ -90,8 +90,8 @@ const TicketDetailCard = ({
       <div className="p-6 space-y-5">
         {/* Catatan admin sebelum assign, ATAU alasan reject (backend pakai 1 field `notes` untuk keduanya) */}
         {ticket.notes && status !== 'Rejected' && (
-          <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/40 space-y-1">
-            <div className="flex items-center gap-2 text-purple-700 dark:text-purple-400 font-bold text-xs uppercase tracking-wider">
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 space-y-1">
+            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-bold text-xs uppercase tracking-wider">
               <FileText size={15} /> Catatan Tambahan Admin
             </div>
             <p className="text-sm text-stone-700 dark:text-stone-300 font-medium pl-6">
@@ -119,7 +119,7 @@ const TicketDetailCard = ({
           <InfoRow
             label="Kondisi"
             value={status === 'Done' ? 'NORMAL' : ticket.maintenance_status}
-            className={status === 'Done' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : ''}
+            className={status === 'Done' ? 'text-green-600 dark:text-green-400 font-bold' : ''}
           />
 
           <InfoRow label="Confidence" value={ticket.confidence != null ? `${(ticket.confidence * 100).toFixed(1)}%` : '—'} />
@@ -216,7 +216,7 @@ const TicketDetailCard = ({
           <button
             onClick={onAssignClick}
             disabled={actionLoading}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-60 cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-60 cursor-pointer"
           >
             {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <UserCheck size={16} />}
             Tugaskan Engineer
@@ -233,7 +233,7 @@ const TicketDetailCard = ({
           <button
             onClick={onReassignClick}
             disabled={actionLoading}
-            className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-xl font-bold text-xs transition-all border border-indigo-200 dark:border-indigo-800/40 cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-cyan-50 hover:bg-cyan-100 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-400 rounded-xl font-bold text-xs transition-all border border-cyan-200 dark:border-cyan-800/40 cursor-pointer"
           >
             <UserCog size={14} /> Tarik Kembali / Ganti Teknisi
           </button>
@@ -274,7 +274,7 @@ const TicketDetailCard = ({
               type="button"
               onClick={onApprove}
               disabled={actionLoading}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-60 cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-60 cursor-pointer"
             >
               {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
               Setujui

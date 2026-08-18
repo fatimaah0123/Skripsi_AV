@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Plus, Search, RefreshCw, ArrowUp, ArrowDown } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import MachineTable, { DeleteConfirmDialog } from '../components/MachineTable';
 import MachineModal from '../components/MachineModal';
 import MachineDetailModal from '../components/MachineDetailModal';
 import useMachine from '../hooks/useMachine';
+
+const PAGE_SIZE = 20;
 
 const MachineManagementPage = () => {
   const { isAdmin } = useAuth();
@@ -34,6 +36,17 @@ const MachineManagementPage = () => {
     setDeleteTarget,
     handleDelete,
   } = useMachine();
+
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset ke halaman 1 setiap kali kata kunci pencarian atau urutan berubah
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, sortBy, sortOrder]);
+
+  const totalPages        = Math.max(1, Math.ceil(machines.length / PAGE_SIZE));
+  const safePage          = Math.min(currentPage, totalPages);
+  const startIndex        = (safePage - 1) * PAGE_SIZE;
+  const paginatedMachines = machines.slice(startIndex, startIndex + PAGE_SIZE);
+  const goToPage           = (page) => setCurrentPage(Math.min(Math.max(1, page), totalPages));
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -112,10 +125,15 @@ const MachineManagementPage = () => {
 
       {!isLoading && !error && (
         <MachineTable
-          machines={machines}
+          machines={paginatedMachines}
           onEdit={openEditModal}
           onDeleteClick={setDeleteTarget}
           onSelectMachine={(machine) => setSelectedMachine(machine)}
+          totalItems={machines.length}
+          startIndex={startIndex}
+          currentPage={safePage}
+          totalPages={totalPages}
+          onPageChange={goToPage}
         />
       )}
 

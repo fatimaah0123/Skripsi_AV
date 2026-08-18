@@ -109,9 +109,6 @@ export const useTicketDetail = (ticketId) => {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Apakah Anda yakin ingin menghapus / membatalkan tiket pemeliharaan ini?')) {
-      return;
-    }
     setActionLoading(true);
     setError('');
     try {

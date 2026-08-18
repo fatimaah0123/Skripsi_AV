@@ -57,8 +57,8 @@ const AssignModal = ({ ticket, onConfirm, onClose, isSubmitting }) => {
       <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-2xl border border-stone-200 dark:border-stone-800 w-full max-w-md">
         <div className="p-5 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-              <UserCheck size={16} className="text-purple-600" />
+            <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+              <UserCheck size={16} className="text-blue-600" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-stone-900 dark:text-white">
@@ -86,7 +86,7 @@ const AssignModal = ({ ticket, onConfirm, onClose, isSubmitting }) => {
               <select
                 value={leaderId}
                 onChange={(e) => handleLeaderChange(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 dark:bg-stone-800 dark:text-white text-sm font-medium focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 outline-none transition-all"
+                className="w-full px-3 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 dark:bg-stone-800 dark:text-white text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none transition-all"
               >
                 <option value="">-- Pilih Leader --</option>
                 {engineers.map((eng) => (
@@ -116,7 +116,7 @@ const AssignModal = ({ ticket, onConfirm, onClose, isSubmitting }) => {
                         type="checkbox"
                         checked={memberIds.includes(String(eng.id))}
                         onChange={() => toggleMember(eng.id)}
-                        className="rounded border-stone-300 text-purple-600 focus:ring-purple-500"
+                        className="rounded border-stone-300 text-blue-600 focus:ring-blue-500"
                       />
                       <span className="text-stone-700 dark:text-stone-300">
                         {eng.name} ({eng.employee_id})
@@ -137,7 +137,7 @@ const AssignModal = ({ ticket, onConfirm, onClose, isSubmitting }) => {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Contoh: Fokus cek area pelumas gear utama, utamakan keselamatan kerja..."
-              className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-stone-700 dark:bg-stone-800 dark:text-white text-xs font-normal focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 outline-none transition-all resize-none"
+              className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-stone-700 dark:bg-stone-800 dark:text-white text-xs font-normal focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none transition-all resize-none"
             />
           </div>
         </div>
@@ -153,7 +153,7 @@ const AssignModal = ({ ticket, onConfirm, onClose, isSubmitting }) => {
           <button
             onClick={() => onConfirm(ticket.id, leaderId, memberIds, notes)}
             disabled={!canSubmit}
-            className="flex-1 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-all text-xs flex items-center justify-center gap-1.5 disabled:opacity-60"
+            className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all text-xs flex items-center justify-center gap-1.5 disabled:opacity-60"
           >
             {isSubmitting ? (
               <><Loader2 size={14} className="animate-spin" /> Menyimpan...</>

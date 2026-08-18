@@ -11,20 +11,20 @@ import AssignModal from '../components/AssignModal';
 import RejectModal from '../components/RejectModal';
 
 const ADMIN_TABS = [
-  { key: 'WaitingAssignment', label: 'Belum Ditugaskan', icon: AlertCircle, color: 'text-yellow-600 border-yellow-500 bg-yellow-50/40' },
-  { key: 'Assigned',          label: 'Ditugaskan',       icon: Clock,       color: 'text-purple-600 border-purple-500 bg-purple-50/40' },
-  { key: 'InProgress',        label: 'Sedang Dikerjakan',icon: Clock,       color: 'text-blue-600   border-blue-500   bg-blue-50/40'   },
-  { key: 'WaitingApproval',   label: 'Review Laporan',   icon: FileCheck,   color: 'text-orange-600 border-orange-500 bg-orange-50/40' },
-  { key: 'Rejected',          label: 'Ditolak / Revisi', icon: RotateCcw,   color: 'text-rose-600   border-rose-500   bg-rose-50/40'   },
-  { key: 'Done',              label: 'Selesai',          icon: CheckCircle2,color: 'text-green-600  border-green-500  bg-green-50/40'  },
+  { key: 'WaitingAssignment', label: 'Belum Ditugaskan', icon: AlertCircle, color: 'text-yellow-600 border-yellow-500 bg-yellow-50/40', badge: 'bg-yellow-500' },
+  { key: 'Assigned',          label: 'Ditugaskan',       icon: Clock,       color: 'text-cyan-600   border-cyan-500   bg-cyan-50/40',   badge: 'bg-cyan-500'   },
+  { key: 'InProgress',        label: 'Sedang Dikerjakan',icon: Clock,       color: 'text-blue-600   border-blue-500   bg-blue-50/40',   badge: 'bg-blue-500'   },
+  { key: 'WaitingApproval',   label: 'Review Laporan',   icon: FileCheck,   color: 'text-orange-600 border-orange-500 bg-orange-50/40', badge: 'bg-orange-500' },
+  { key: 'Rejected',          label: 'Ditolak / Revisi', icon: RotateCcw,   color: 'text-rose-600   border-rose-500   bg-rose-50/40',   badge: 'bg-rose-500'   },
+  { key: 'Done',              label: 'Selesai',          icon: CheckCircle2,color: 'text-green-600  border-green-500  bg-green-50/40',  badge: 'bg-green-500'  },
 ];
 
 const ENGINEER_TABS = [
-  { key: 'Assigned',        label: 'Ditugaskan',         icon: Clock,       color: 'text-purple-600 border-purple-500 bg-purple-50/40' },
-  { key: 'InProgress',      label: 'Sedang Dikerjakan',  icon: Clock,       color: 'text-blue-600   border-blue-500   bg-blue-50/40'   },
-  { key: 'Rejected',        label: 'Ditolak / Revisi',   icon: RotateCcw,   color: 'text-rose-600   border-rose-500   bg-rose-50/40'   },
-  { key: 'WaitingApproval', label: 'Menunggu Approval',  icon: AlertCircle, color: 'text-orange-600 border-orange-500 bg-orange-50/40' },
-  { key: 'Done',            label: 'Selesai',            icon: CheckCircle2,color: 'text-green-600  border-green-500  bg-green-50/40'  },
+  { key: 'Assigned',        label: 'Ditugaskan',         icon: Clock,       color: 'text-cyan-600   border-cyan-500   bg-cyan-50/40',   badge: 'bg-cyan-500'   },
+  { key: 'InProgress',      label: 'Sedang Dikerjakan',  icon: Clock,       color: 'text-blue-600   border-blue-500   bg-blue-50/40',   badge: 'bg-blue-500'   },
+  { key: 'Rejected',        label: 'Ditolak / Revisi',   icon: RotateCcw,   color: 'text-rose-600   border-rose-500   bg-rose-50/40',   badge: 'bg-rose-500'   },
+  { key: 'WaitingApproval', label: 'Menunggu Approval',  icon: AlertCircle, color: 'text-orange-600 border-orange-500 bg-orange-50/40', badge: 'bg-orange-500' },
+  { key: 'Done',            label: 'Selesai',            icon: CheckCircle2,color: 'text-green-600  border-green-500  bg-green-50/40',  badge: 'bg-green-500'  },
 ];
 
 const formatDate = (iso) => {
@@ -111,9 +111,11 @@ const TicketsPage = () => {
         <>
           {/* TAB HEADERS */}
           <div className="flex flex-wrap gap-1 border-b border-stone-200 dark:border-stone-800">
-            {tabs.map(({ key, label, icon: Icon, color }) => {
+            {tabs.map(({ key, label, icon: Icon, color, badge }) => {
               const isActive = activeTab === key;
               const count    = countByStatus(key);
+              // Status yang butuh perhatian admin/teknisi ditandai berkedip pelan
+              const needsAttention = ['WaitingAssignment', 'WaitingApproval', 'Rejected'].includes(key);
               return (
                 <button
                   key={key}
@@ -127,12 +129,8 @@ const TicketsPage = () => {
                   <Icon size={15} />
                   {label}
                   {count > 0 && (
-                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
-                      key === 'Rejected'
-                        ? 'bg-rose-500 text-white animate-pulse'
-                        : isActive
-                        ? 'bg-current/20'
-                        : 'bg-stone-100 dark:bg-stone-800 text-stone-500'
+                    <span className={`text-[10px] font-black min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-white shrink-0 ${badge} ${
+                      needsAttention ? 'animate-pulse' : ''
                     }`}>
                       {count}
                     </span>
@@ -178,7 +176,7 @@ const TicketsPage = () => {
                     <div className="pt-2 border-t border-stone-100 dark:border-stone-800 mt-auto">
                       <button
                         onClick={(e) => { e.stopPropagation(); setAssignTarget(ticket); }}
-                        className="w-full flex items-center justify-center gap-1.5 px-4 py-2 bg-purple-50 hover:bg-purple-600 text-purple-700 hover:text-white border border-purple-200 hover:border-purple-600 text-xs font-bold rounded-xl transition-all"
+                        className="w-full flex items-center justify-center gap-1.5 px-4 py-2 bg-cyan-50 hover:bg-cyan-600 text-cyan-700 hover:text-white border border-cyan-200 hover:border-cyan-600 text-xs font-bold rounded-xl transition-all"
                       >
                         Tugaskan Engineer
                       </button>

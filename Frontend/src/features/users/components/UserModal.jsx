@@ -44,7 +44,21 @@ const UserModal = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto grow">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto grow" autoComplete="off">
+          {/*
+            Decoy fields: beberapa browser (Chrome/Edge) mendeteksi pola
+            "text field lalu password field" sebagai form login dan otomatis
+            mengisi Nama Lengkap dengan email tersimpan + Password dengan
+            password tersimpan, walau autocomplete="off" di field asli
+            sering diabaikan browser untuk kasus ini. Trik: sediakan field
+            username/password tersembunyi di awal form sebagai "umpan" agar
+            autofill browser menyasar ke sini, bukan ke field asli.
+          */}
+          <div style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden', opacity: 0 }} aria-hidden="true">
+            <input type="text" name="fake_username" autoComplete="username" tabIndex={-1} />
+            <input type="password" name="fake_password" autoComplete="new-password" tabIndex={-1} />
+          </div>
+
           {formError && (
             <div className="px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
               {formError}
@@ -62,6 +76,7 @@ const UserModal = ({
                   <input
                     name="employee_id"
                     required
+                    autoComplete="off"
                     placeholder="EMP-001"
                     value={formData.employee_id}
                     onChange={handleChange}
@@ -80,6 +95,7 @@ const UserModal = ({
                     name="email"
                     type="email"
                     required
+                    autoComplete="off"
                     placeholder="nama@avatar.com"
                     value={formData.email}
                     onChange={handleChange}
@@ -105,6 +121,7 @@ const UserModal = ({
               <input
                 name="name"
                 required
+                autoComplete="off"
                 placeholder="Nama lengkap pengguna..."
                 value={formData.name}
                 onChange={handleChange}
@@ -126,6 +143,7 @@ const UserModal = ({
                 type={showPassword ? 'text' : 'password'}
                 required={!isEdit}
                 minLength={isEdit ? undefined : 8}
+                autoComplete="new-password"
                 placeholder={isEdit ? 'Password baru (opsional)' : 'Minimal 8 karakter'}
                 value={formData.password}
                 onChange={handleChange}
@@ -146,17 +164,26 @@ const UserModal = ({
 
           <div>
             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
-              Role
+              Role <span className="text-red-500">*</span>
             </label>
             <select
               name="role"
+              required
               value={formData.role}
               onChange={handleChange}
-              className="w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-800 dark:bg-stone-800 dark:text-white font-bold text-sm focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 outline-none transition-all appearance-none"
+              className={`w-full px-4 py-3 rounded-xl border dark:bg-stone-800 font-bold text-sm focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 outline-none transition-all appearance-none ${
+                formData.role
+                  ? 'border-stone-200 dark:border-stone-800 text-gray-900 dark:text-white'
+                  : 'border-red-200 dark:border-red-800/60 text-stone-400'
+              }`}
             >
+              <option value="" disabled hidden>-- Pilih Role --</option>
               <option value="Engineer">Engineer</option>
               <option value="Admin">Admin</option>
             </select>
+            {!formData.role && (
+              <p className="text-[11px] text-red-500 mt-1.5">Role wajib dipilih sebelum menyimpan.</p>
+            )}
           </div>
 
           <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2 pb-1">

@@ -8,8 +8,8 @@ const STATUS_CONFIG = {
   },
   Assigned: {
     label: 'Ditugaskan',
-    className: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800/40',
-    dot: 'bg-purple-500',
+    className: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800/40',
+    dot: 'bg-cyan-500',
   },
   InProgress: {
     label: 'Sedang Dikerjakan',
@@ -24,8 +24,8 @@ const STATUS_CONFIG = {
   // GANTI: RevisionRequired -> Rejected (sesuai enum status backend)
   Rejected: {
     label: 'Ditolak / Perlu Revisi',
-    className: 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-300 border-fuchsia-300 dark:border-fuchsia-800/40 font-bold',
-    dot: 'bg-fuchsia-500 animate-bounce',
+    className: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border-rose-200 dark:border-rose-800/40',
+    dot: 'bg-rose-500',
   },
   Done: {
     label: 'Selesai',

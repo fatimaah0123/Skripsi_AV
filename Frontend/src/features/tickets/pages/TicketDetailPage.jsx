@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertTriangle } from 'lucide-react';
 import { useTicketDetail } from '../hooks/useTicketDetail';
 import TicketDetailCard from '../components/TicketDetailCard';
 import AssignModal from '../components/AssignModal';
@@ -8,6 +8,51 @@ import RejectModal from '../components/RejectModal';
 import SubmitReportModal from '../components/SubmitReportModal';
 import ReassignModal from '../components/ReassignModal';
 import StartWorkModal from '../components/StartWorkModal';
+
+// Menggantikan window.confirm() bawaan browser yang kaku ("localhost:5173 menyatakan...")
+// dengan modal custom — gaya disamakan dengan DeleteConfirmDialog di MachineTable.jsx/UserTable.jsx
+// supaya konsisten satu sistem.
+const DeleteTicketConfirmDialog = ({ isOpen, isSubmitting, onConfirm, onCancel }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-2xl border border-stone-200 dark:border-stone-800 p-5 sm:p-6 w-full max-w-sm">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 shrink-0 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+            <AlertTriangle size={20} className="text-red-500" />
+          </div>
+          <div>
+            <h4 className="font-bold text-stone-900 dark:text-white">Hapus Tiket?</h4>
+            <p className="text-xs text-stone-500 mt-0.5">Tindakan ini tidak dapat dibatalkan</p>
+          </div>
+        </div>
+        <p className="text-sm text-stone-600 dark:text-stone-400 mb-6">
+          Anda akan menghapus / membatalkan tiket pemeliharaan ini secara permanen.
+        </p>
+        <div className="flex flex-col-reverse sm:flex-row gap-3">
+          <button
+            onClick={onCancel}
+            disabled={isSubmitting}
+            className="flex-1 px-4 py-2.5 border border-stone-200 dark:border-stone-700 rounded-xl font-bold text-stone-500 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all text-sm disabled:opacity-60"
+          >
+            Batal
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isSubmitting}
+            className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            {isSubmitting ? (
+              <><Loader2 size={14} className="animate-spin" /> Menghapus...</>
+            ) : (
+              'Ya, Hapus'
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const TicketDetailPage = () => {
   const { id } = useParams();
@@ -34,6 +79,16 @@ const TicketDetailPage = () => {
   const [showSubmitModal, setShowSubmitModal]     = useState(false);
   const [showReassignModal, setShowReassignModal] = useState(false);
   const [showStartModal, setShowStartModal]       = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const onDeleteConfirm = async () => {
+    try {
+      await handleDelete();
+      // Kalau berhasil, hook sudah navigate('/tiket') — modal otomatis unmount bersama halaman.
+    } catch {
+      setShowDeleteConfirm(false);
+    }
+  };
 
   const onAssignConfirm = async (ticketId, leaderId, memberIds, notes) => {
     try {
@@ -116,7 +171,7 @@ const TicketDetailPage = () => {
         onApprove={handleApprove}
         onRejectClick={() => setShowRejectModal(true)}
         onReassignClick={() => setShowReassignModal(true)}
-        onDeleteClick={handleDelete}
+        onDeleteClick={() => setShowDeleteConfirm(true)}
       />
 
       {/* Modals */}
@@ -167,6 +222,13 @@ const TicketDetailPage = () => {
           onConfirm={onReassignConfirm}
         />
       )}
+
+      <DeleteTicketConfirmDialog
+        isOpen={showDeleteConfirm}
+        isSubmitting={actionLoading}
+        onConfirm={onDeleteConfirm}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </div>
   );
 };

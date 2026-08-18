@@ -5,11 +5,13 @@ import {
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import useTicketNotifications from '../features/tickets/hooks/useTicketNotifications';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const navigate  = useNavigate();
   const location  = useLocation();
   const { isAdmin, user, logout } = useAuth();
+  const { badgeCount } = useTicketNotifications();
 
   const isActive = (path) =>
     path === '/dashboard'
@@ -89,6 +91,11 @@ const Sidebar = ({ isOpen, onClose }) => {
             <button key={item.path} onClick={() => go(item.path)} className={btnClass(item.path)}>
               <span className={iconClass(item.path)}>{item.icon}</span>
               {item.title}
+              {item.path === '/tickets' && badgeCount > 0 && (
+                <span className="ml-auto min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full bg-orange-500 text-white text-[10px] font-black animate-pulse">
+                  {badgeCount > 9 ? '9+' : badgeCount}
+                </span>
+              )}
             </button>
           ))}
 

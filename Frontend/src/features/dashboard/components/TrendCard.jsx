@@ -10,12 +10,40 @@ const STATUS_COLOR = {
   Active:            '#10b981',
   Maintenance:       '#f59e0b',
   Onduty:            '#3b82f6',
-  Done:              '#10b981',
+  Done:              '#22c55e',
   InProgress:        '#3b82f6',
-  Assigned:          '#8b5cf6',
-  Rejected:          '#ef4444',
-  WaitingAssignment: '#f59e0b',
+  Assigned:          '#06b6d4', 
+  Rejected:          '#f43f5e', 
+  WaitingAssignment: '#eab308', 
   WaitingApproval:   '#f97316',
+};
+
+const STATUS_LABEL = {
+  WaitingAssignment: 'Belum Ditugaskan',
+  Assigned:          'Ditugaskan',
+  InProgress:        'Sedang Dikerjakan',
+  WaitingApproval:   'Menunggu Approval',
+  Rejected:          'Ditolak / Perlu Revisi',
+  Done:              'Selesai',
+};
+
+const TICKET_STATUS_ORDER = [
+  'WaitingAssignment',
+  'Assigned',
+  'InProgress',
+  'WaitingApproval',
+  'Rejected',
+  'Done',
+];
+
+const sortByTicketWorkflow = (data) => {
+  return [...data].sort((a, b) => {
+    const idxA = TICKET_STATUS_ORDER.indexOf(a.status);
+    const idxB = TICKET_STATUS_ORDER.indexOf(b.status);
+    // Status yang tidak dikenal (di luar daftar) ditaruh di akhir, bukan didepan
+    return (idxA === -1 ? TICKET_STATUS_ORDER.length : idxA) -
+           (idxB === -1 ? TICKET_STATUS_ORDER.length : idxB);
+  });
 };
 const FAILURE_COLORS = ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16'];
 
@@ -44,9 +72,24 @@ const CustomTooltip = ({ active, payload, label }) => {
 // Komponen kustom untuk membungkus teks ke bawah dengan jarak vertikal yang aman dari garis
 const RenderCustomTick = ({ x, y, payload }) => {
   if (!payload || !payload.value) return null;
-  
-  // Memecah teks berdasarkan huruf kapital (contoh: "InProgress" -> ["In", "Progress"])
-  const words = payload.value.match(/[A-Z][a-z]+/g) || [payload.value];
+
+  // Label sudah dalam Bahasa Indonesia (berspasi, contoh: "Sedang Dikerjakan"),
+  // jadi dipecah per spasi. Fallback ke pemecahan PascalCase untuk jaga-jaga
+  // kalau suatu saat dataKey berisi enum mentah tanpa spasi (mis. "InProgress").
+  const rawWords = payload.value.includes(' ')
+    ? payload.value.split(' ')
+    : (payload.value.match(/[A-Z][a-z]+/g) || [payload.value]);
+
+  // Gabungkan token "/" berdiri sendiri ke kata berikutnya, supaya "Ditolak / Revisi"
+  // tidak menghasilkan baris terpisah cuma berisi "/"
+  const words = rawWords.reduce((acc, word) => {
+    if (word === '/' && acc.length > 0) {
+      acc[acc.length - 1] = `${acc[acc.length - 1]} /`;
+    } else {
+      acc.push(word);
+    }
+    return acc;
+  }, []);
 
   return (
     <g transform={`translate(${x},${y})`}>
@@ -99,10 +142,13 @@ const TrendCard = ({
     total: Number(item.total),
   }));
 
-  const formattedTicketStatus = ticketStatus.map((item) => ({
-    ...item,
-    total: Number(item.total),
-  }));
+  const formattedTicketStatus = sortByTicketWorkflow(
+    ticketStatus.map((item) => ({
+      ...item,
+      total: Number(item.total),
+      label: STATUS_LABEL[item.status] || item.status, // fallback ke enum asli jika belum dipetakan
+    }))
+  );
 
   return (
     <div className="space-y-6">
@@ -182,7 +228,7 @@ const TrendCard = ({
               <BarChart data={formattedTicketStatus} margin={{ top: 10, right: 10, left: -20, bottom: 30 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                 <XAxis 
-                  dataKey="status" 
+                  dataKey="label" 
                   interval={0} 
                   height={50}
                   tickLine={false} // Menyembunyikan garis penunjuk kecil bawaan agar terlihat bersih

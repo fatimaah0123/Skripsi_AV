@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from '../features/tickets/components/NotificationBell';
 
 const ThemeToggle = ({ isDark, toggle }) => (
   <button
@@ -85,6 +86,7 @@ const Navbar = ({ isDark, toggleDark, onMenuClick }) => {
 
           {/* Kontrol Kanan: Dark Mode + User Info + Logout */}
           <div className="flex items-center gap-2 lg:gap-4">
+            <NotificationBell variant="dark" />
             <ThemeToggle isDark={isDark} toggle={toggleDark} />
 
             <div className="flex items-center gap-3 border-l border-white/20 pl-4 lg:pl-6 text-white">

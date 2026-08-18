@@ -65,8 +65,8 @@ const ReassignModal = ({ ticket, onConfirm, onClose, isSubmitting }) => {
       <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-2xl border border-stone-200 dark:border-stone-800 w-full max-w-md">
         <div className="p-5 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-              <UserCog size={16} className="text-indigo-600" />
+            <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+              <UserCog size={16} className="text-blue-600" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-stone-900 dark:text-white">
@@ -96,12 +96,12 @@ const ReassignModal = ({ ticket, onConfirm, onClose, isSubmitting }) => {
               {/* Ganti Leader */}
               <div>
                 <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-2">
-                  Leader Saat Ini: <span className="text-indigo-600">{currentLeader?.name || '—'}</span>
+                  Leader Saat Ini: <span className="text-blue-600">{currentLeader?.name || '—'}</span>
                 </label>
                 <select
                   value={newLeaderId}
                   onChange={(e) => setNewLeaderId(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 dark:bg-stone-800 dark:text-white text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all"
+                  className="w-full px-3 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 dark:bg-stone-800 dark:text-white text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none transition-all"
                 >
                   <option value="">-- Tidak diubah --</option>
                   {allEngineers
@@ -155,7 +155,7 @@ const ReassignModal = ({ ticket, onConfirm, onClose, isSubmitting }) => {
                           type="checkbox"
                           checked={addMemberIds.includes(String(eng.id))}
                           onChange={() => toggleAdd(eng.id)}
-                          className="rounded border-stone-300 text-emerald-600 focus:ring-emerald-500"
+                          className="rounded border-stone-300 text-green-600 focus:ring-green-500"
                         />
                         <span className="text-stone-700 dark:text-stone-300">
                           {eng.name} ({eng.employee_id})
@@ -180,7 +180,7 @@ const ReassignModal = ({ ticket, onConfirm, onClose, isSubmitting }) => {
           <button
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="flex-1 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all text-xs flex items-center justify-center gap-1.5 disabled:opacity-60"
+            className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all text-xs flex items-center justify-center gap-1.5 disabled:opacity-60"
           >
             {isSubmitting ? (
               <><Loader2 size={14} className="animate-spin" /> Menyimpan...</>
