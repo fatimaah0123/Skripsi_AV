@@ -37,8 +37,8 @@ const machineController = {
       machineValidator.postMachinePayload(req.body);
       const { name, code, type, location, install_date } = req.body;
       const machine = await machineService.createMachine(
-        name,
         code,
+        name,
         type,
         location,
         install_date,
@@ -61,8 +61,8 @@ const machineController = {
       const { name, code, type, location, install_date } = req.body;
       const machine = await machineService.updateMachine(
         id,
-        name,
         code,
+        name,
         type,
         location,
         install_date,

@@ -28,11 +28,12 @@ const getChatbotErrorMessage = (err) => {
 };
 
 export const useChatbot = () => {
-  const [input, setInput]             = useState('');
-  const [chatHistory, setChatHistory] = useState([INITIAL_BOT_MESSAGE]);
-  const [isLoading, setIsLoading]     = useState(false);
-  const [sessionId, setSessionId]     = useState(null); // dipakai backend untuk menjaga konteks percakapan
-  const scrollRef                     = useRef(null);
+  const [input, setInput]                   = useState('');
+  const [chatHistory, setChatHistory]       = useState([INITIAL_BOT_MESSAGE]);
+  const [isLoading, setIsLoading]           = useState(false);
+  const [sessionId, setSessionId]           = useState(null); // dipakai backend untuk menjaga konteks percakapan
+  const [isClearDialogOpen, setClearDialogOpen] = useState(false); // kontrol modal konfirmasi hapus
+  const scrollRef                           = useRef(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -69,13 +70,17 @@ export const useChatbot = () => {
     }
   };
 
-  const clearChat = () => {
-    if (window.confirm('Hapus semua riwayat percakapan?')) {
-      setSessionId(null); // sesi baru dimulai dari awal
-      setChatHistory([
-        { role: 'bot', message: 'Riwayat dihapus. Ada lagi yang bisa saya bantu?' },
-      ]);
-    }
+  // Membuka modal konfirmasi (menggantikan window.confirm)
+  const requestClearChat = () => setClearDialogOpen(true);
+
+  const cancelClearChat = () => setClearDialogOpen(false);
+
+  const confirmClearChat = () => {
+    setSessionId(null); // sesi baru dimulai dari awal
+    setChatHistory([
+      { role: 'bot', message: 'Riwayat dihapus. Ada lagi yang bisa saya bantu?' },
+    ]);
+    setClearDialogOpen(false);
   };
 
   return {
@@ -85,6 +90,9 @@ export const useChatbot = () => {
     isLoading,
     scrollRef,
     handleSend,
-    clearChat,
+    isClearDialogOpen,
+    requestClearChat,
+    cancelClearChat,
+    confirmClearChat,
   };
 };

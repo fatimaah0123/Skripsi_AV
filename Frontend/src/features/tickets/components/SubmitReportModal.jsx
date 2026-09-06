@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Camera, Upload, Loader2, Trash2, StopCircle, UserCheck } from 'lucide-react';
+import { X, Send, Camera, Upload, Loader2, Trash2, StopCircle, UserCheck, AlertCircle, CheckCircle2, Clock, FileText } from 'lucide-react';
 import { ticketService } from '../services/ticketService';
 import useCamera from '../hooks/useCamera';
 import { useAuth } from '../../../context/AuthContext';
@@ -100,8 +100,20 @@ const SubmitReportModal = ({ ticket, report, onSuccess, onClose }) => {
     }
   };
 
-  const inputCls = "w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-800 dark:bg-stone-800 dark:text-white text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none transition-all";
-  const inputDisabledCls = "w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-100 dark:bg-stone-800/60 text-stone-500 dark:text-stone-400 text-sm cursor-not-allowed";
+  // Input polos yang duduk DI DALAM kartu beraksen warna (bukan lagi kotak bordered sendiri)
+  const fieldInputCls = "w-full bg-white/70 dark:bg-stone-900/40 border border-stone-200/70 dark:border-stone-700/50 rounded-lg px-3 py-2.5 text-sm text-stone-800 dark:text-white placeholder:text-stone-400 focus:ring-2 focus:ring-offset-0 outline-none transition-all";
+  const inputDisabledCls = "w-full px-3 py-2.5 rounded-lg border border-stone-200/70 dark:border-stone-700/50 bg-white/40 dark:bg-stone-900/20 text-stone-500 dark:text-stone-400 text-sm cursor-not-allowed";
+
+  // Kartu aksen: border kiri tebal berwarna + tint background lembut, mengikuti gaya "Dokumen Hasil Pemeliharaan"
+  const AccentField = ({ color, icon: Icon, label, required, children }) => (
+    <div className={`rounded-xl border border-stone-200 dark:border-stone-800 border-l-4 border-l-${color}-400 bg-${color}-50/50 dark:bg-${color}-900/10 p-3.5`}>
+      <label className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest mb-2 text-${color}-700 dark:text-${color}-400`}>
+        <Icon size={13} />
+        {label} {required && <span className="text-red-500 normal-case">*</span>}
+      </label>
+      {children}
+    </div>
+  );
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -128,7 +140,7 @@ const SubmitReportModal = ({ ticket, report, onSuccess, onClose }) => {
           </button>
         </div>
 
-        <form id="submit-report-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-4">
+        <form id="submit-report-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-3.5">
           {error && (
             <div ref={errorRef} className="px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
               {error}
@@ -141,10 +153,8 @@ const SubmitReportModal = ({ ticket, report, onSuccess, onClose }) => {
             </div>
           )}
 
-          <div>
-            <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5 flex items-center gap-1">
-              <UserCheck size={14} className="text-blue-500" /> Penanggung Jawab (Leader)
-            </label>
+          {/* Leader - aksen cyan */}
+          <AccentField color="cyan" icon={UserCheck} label="Penanggung Jawab (Leader)">
             <input
               type="text"
               value={teamLeaderName}
@@ -152,12 +162,10 @@ const SubmitReportModal = ({ ticket, report, onSuccess, onClose }) => {
               readOnly
               className={inputDisabledCls}
             />
-          </div>
+          </AccentField>
 
-          <div>
-            <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">
-              Deskripsi Masalah <span className="text-red-500">*</span>
-            </label>
+          {/* Deskripsi Masalah - aksen amber */}
+          <AccentField color="amber" icon={AlertCircle} label="Deskripsi Masalah" required>
             <textarea 
               name="description" 
               required 
@@ -166,14 +174,12 @@ const SubmitReportModal = ({ ticket, report, onSuccess, onClose }) => {
               value={form.description} 
               onChange={handleChange} 
               placeholder="Jelaskan masalah yang ditemukan... (min. 10 karakter)" 
-              className={`${inputCls} resize-none`} 
+              className={`${fieldInputCls} resize-none focus:border-amber-400 focus:ring-amber-500/20`} 
             />
-          </div>
+          </AccentField>
 
-          <div>
-            <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">
-              Tindakan yang Dilakukan <span className="text-red-500">*</span>
-            </label>
+          {/* Tindakan yang Dilakukan - aksen hijau */}
+          <AccentField color="emerald" icon={CheckCircle2} label="Tindakan yang Dilakukan" required>
             <textarea 
               name="action_taken" 
               required 
@@ -182,13 +188,14 @@ const SubmitReportModal = ({ ticket, report, onSuccess, onClose }) => {
               value={form.action_taken} 
               onChange={handleChange} 
               placeholder="Jelaskan tindakan perbaikan yang telah dilakukan... (min. 10 karakter)" 
-              className={`${inputCls} resize-none`} 
+              className={`${fieldInputCls} resize-none focus:border-emerald-400 focus:ring-emerald-500/20`} 
             />
-          </div>
+          </AccentField>
 
-          <div>
-            <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">
-              Durasi Pengerjaan (jam) <span className="text-red-500">*</span>
+          {/* Durasi - kartu solid biru, seperti kartu "Durasi" di riwayat */}
+          <div className="rounded-xl bg-blue-50 dark:bg-blue-900/20 p-3.5">
+            <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest mb-2 text-blue-700 dark:text-blue-400">
+              <Clock size={13} /> Durasi Pengerjaan (jam) <span className="text-red-500 normal-case">*</span>
             </label>
             <input 
               type="number" 
@@ -199,62 +206,55 @@ const SubmitReportModal = ({ ticket, report, onSuccess, onClose }) => {
               value={form.duration_hours} 
               onChange={handleChange} 
               placeholder="Contoh: 2.5" 
-              className={inputCls} 
+              className={`${fieldInputCls} focus:border-blue-400 focus:ring-blue-500/20 font-bold text-blue-700 dark:text-blue-300`}
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">
-              Catatan <span className="text-stone-300">(opsional)</span>
-            </label>
+          {/* Catatan - aksen netral abu-abu */}
+          <AccentField color="stone" icon={FileText} label="Catatan (opsional)">
             <input 
               type="text" 
               name="notes" 
               value={form.notes} 
               onChange={handleChange} 
               placeholder="Rekomendasi, temuan lain, dll..." 
-              className={inputCls} 
+              className={`${fieldInputCls} focus:border-stone-400 focus:ring-stone-500/20`}
             />
-          </div>
+          </AccentField>
 
-          <div>
-            <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">
-              Foto Bukti Pekerjaan <span className="text-red-500">*</span>
-            </label>
-
+          {/* Foto Bukti - aksen violet */}
+          <AccentField color="violet" icon={Camera} label="Foto Bukti Pekerjaan" required>
             {image ? (
-              <div className="space-y-2">
-                <div className="relative rounded-xl overflow-hidden border border-stone-200 dark:border-stone-700">
-                  <img src={image} alt="Preview bukti" className="w-full h-52 object-cover" />
-                  <button 
-                    type="button" 
-                    onClick={() => { resetImage(); stopCamera(); }}
-                    className="absolute top-2 right-2 p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors" 
-                    title="Hapus foto"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
+              <div className="relative rounded-lg overflow-hidden border border-stone-200 dark:border-stone-700">
+                <img src={image} alt="Preview bukti" className="w-full h-52 object-cover" />
+                <button 
+                  type="button" 
+                  onClick={() => { resetImage(); stopCamera(); }}
+                  className="absolute top-2 right-2 p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors" 
+                  title="Hapus foto"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
             ) : (
               <>
                 {isCameraOpen && (
                   <div className="mb-3 space-y-2">
-                    <div className="relative rounded-xl overflow-hidden bg-black border border-stone-700">
+                    <div className="relative rounded-lg overflow-hidden bg-black border border-stone-700">
                       <video ref={videoRef} autoPlay playsInline muted className="w-full h-52 object-cover" />
                     </div>
                     <div className="flex gap-2">
                       <button 
                         type="button" 
                         onClick={takePicture}
-                        className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-all"
+                        className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-bold text-sm transition-all"
                       >
                         <Camera size={16} /> Ambil Foto
                       </button>
                       <button 
                         type="button" 
                         onClick={stopCamera}
-                        className="px-4 py-2.5 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-xl font-bold text-sm transition-all"
+                        className="px-4 py-2.5 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-lg font-bold text-sm transition-all"
                       >
                         <StopCircle size={16} />
                       </button>
@@ -267,18 +267,18 @@ const SubmitReportModal = ({ ticket, report, onSuccess, onClose }) => {
                     <button 
                       type="button" 
                       onClick={startCamera}
-                      className="flex flex-col items-center justify-center gap-2 py-6 rounded-xl border-2 border-dashed border-stone-200 dark:border-stone-700 hover:border-blue-400 transition-all"
+                      className="flex flex-col items-center justify-center gap-2 py-6 rounded-lg border-2 border-dashed border-violet-200 dark:border-violet-800/40 bg-white/60 dark:bg-stone-900/30 hover:border-violet-400 transition-all"
                     >
-                      <Camera size={24} className="text-stone-400" />
-                      <span className="text-xs font-bold text-stone-500">Buka Kamera</span>
+                      <Camera size={24} className="text-violet-400" />
+                      <span className="text-xs font-bold text-violet-500">Buka Kamera</span>
                     </button>
                     <button 
                       type="button" 
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex flex-col items-center justify-center gap-2 py-6 rounded-xl border-2 border-dashed border-stone-200 dark:border-stone-700 hover:border-blue-400 transition-all"
+                      className="flex flex-col items-center justify-center gap-2 py-6 rounded-lg border-2 border-dashed border-violet-200 dark:border-violet-800/40 bg-white/60 dark:bg-stone-900/30 hover:border-violet-400 transition-all"
                     >
-                      <Upload size={24} className="text-stone-400" />
-                      <span className="text-xs font-bold text-stone-500">Upload File</span>
+                      <Upload size={24} className="text-violet-400" />
+                      <span className="text-xs font-bold text-violet-500">Upload File</span>
                     </button>
                   </div>
                 )}
@@ -287,7 +287,7 @@ const SubmitReportModal = ({ ticket, report, onSuccess, onClose }) => {
 
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
             <canvas ref={canvasRef} className="hidden" />
-          </div>
+          </AccentField>
         </form>
 
         <div className="p-5 border-t border-stone-100 dark:border-stone-800 flex gap-3 shrink-0">
