@@ -80,10 +80,23 @@ python main.py
 ```
 
 ### 5️⃣ Jalankan RabbitMQ
-Pastikan RabbitMQ berjalan (disarankan lewat Docker):
+Pastikan RabbitMQ berjalan (disarankan lewat Docker).
+ 
+**Pertama kali setup (container belum pernah dibuat):**
 ```bash
 docker run -d --hostname rabbitmq-avatar --name rabbitmq-avatar -p 5672:5672 -p 15672:15672 rabbitmq:3-management
 ```
+ 
+**Jika container sudah pernah dibuat sebelumnya** (misalnya setelah restart device, atau muncul error `Conflict. The container name "/rabbitmq-avatar" is already in use`), cukup jalankan ulang container yang sudah ada — tidak perlu `docker run` lagi:
+```bash
+docker start rabbitmq-avatar
+```
+ 
+Verifikasi RabbitMQ sudah aktif:
+```bash
+docker ps
+```
+Pastikan `rabbitmq-avatar` muncul dengan status `Up`.
 
 ---
 
