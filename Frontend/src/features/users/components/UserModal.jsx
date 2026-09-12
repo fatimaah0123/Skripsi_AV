@@ -178,7 +178,7 @@ const UserModal = ({
               }`}
             >
               <option value="" disabled hidden>-- Pilih Role --</option>
-              <option value="Engineer">Engineer</option>
+              <option value="Engineer">Teknisi</option>
               <option value="Admin">Admin</option>
             </select>
             {!formData.role && (

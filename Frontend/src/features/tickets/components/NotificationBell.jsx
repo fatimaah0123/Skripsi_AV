@@ -14,6 +14,7 @@ const NotificationBell = ({ variant = 'light' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [coords, setCoords] = useState({ top: 0, right: 0 });
   const buttonRef   = useRef(null);
+  const wasOpenRef  = useRef(false);
 
   const {
     isAdmin,
@@ -64,11 +65,15 @@ const NotificationBell = ({ variant = 'light' }) => {
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (wasOpenRef.current && !isOpen && !isAdmin) {
+      markAllAssignedAsSeen();
+    }
+    wasOpenRef.current = isOpen;
+  }, [isOpen, isAdmin, markAllAssignedAsSeen]);
+
   const handleToggle = () => {
-    const next = !isOpen;
-    setIsOpen(next);
-    // Teknisi: begitu dropdown dibuka, anggap semua notif "dilihat"
-    if (next && !isAdmin) markAllAssignedAsSeen();
+    setIsOpen((prev) => !prev);
   };
 
   const handleItemClick = (ticket) => {

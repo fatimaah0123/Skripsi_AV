@@ -14,6 +14,18 @@ const formatDate = (iso) => {
   });
 };
 
+// Ubah desimal jam (mis. 1.5) menjadi teks "1 jam 30 menit" agar lebih enak dibaca
+const formatDurationHours = (decimalHours) => {
+  const total = Number(decimalHours) || 0;
+  const hours = Math.floor(total);
+  const minutes = Math.round((total - hours) * 60);
+
+  if (hours === 0 && minutes === 0) return '0 menit';
+  if (hours === 0) return `${minutes} menit`;
+  if (minutes === 0) return `${hours} jam`;
+  return `${hours} jam ${minutes} menit`;
+};
+
 const getImageUrl = (path) => {
   if (!path) return null;
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
@@ -177,7 +189,7 @@ const TicketDetailCard = ({
               {/* report.notes = catatan tambahan dari engineer, beda dari ticket.notes (punya admin) */}
               {report.notes && <p><span className="font-semibold">Catatan Engineer:</span> {report.notes}</p>}
               {report.duration_hours != null && (
-                <p><span className="font-semibold">Durasi:</span> {report.duration_hours} jam</p>
+                <p><span className="font-semibold">Durasi:</span> {formatDurationHours(report.duration_hours)}</p>
               )}
             </div>
 

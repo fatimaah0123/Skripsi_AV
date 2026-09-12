@@ -4,14 +4,32 @@ import { ticketService } from '../services/ticketService';
 import useCamera from '../hooks/useCamera';
 import { useAuth } from '../../../context/AuthContext';
 
+
+const AccentField = ({ color, icon: Icon, label, required, children }) => (
+  <div className={`rounded-xl border border-stone-200 dark:border-stone-800 border-l-4 border-l-${color}-400 bg-${color}-50/50 dark:bg-${color}-900/10 p-3.5`}>
+    <label className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest mb-2 text-${color}-700 dark:text-${color}-400`}>
+      <Icon size={13} />
+      {label} {required && <span className="text-red-500 normal-case">*</span>}
+    </label>
+    {children}
+  </div>
+);
+
 const SubmitReportModal = ({ ticket, report, onSuccess, onClose }) => {
   const { user } = useAuth();
   const teamLeaderName = user?.name || user?.full_name || '';
+
+  // Konversi duration_hours (desimal, mis. 1.75) dari laporan lama menjadi Jam & Menit
+  const initialDuration = Number(report?.duration_hours) || 0;
+  const initHours = Math.floor(initialDuration);
+  const initMinutes = Math.round((initialDuration - initHours) * 60);
+
   const [form, setForm] = useState({
     description: report?.description || '',
     action_taken: report?.action_taken || '',
     notes: report?.notes || '',
-    duration_hours: report?.duration_hours || '',
+    duration_h: report ? String(initHours) : '',
+    duration_m: report ? String(initMinutes) : '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,6 +50,24 @@ const SubmitReportModal = ({ ticket, report, onSuccess, onClose }) => {
   }, [error]);
 
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+
+  // Handler khusus Jam & Menit: hanya angka bulat, menit dibatasi maksimal 59
+  const handleDurationChange = (e) => {
+    const { name, value } = e.target;
+    let v = value.replace(/[^0-9]/g, '');
+
+    if (name === 'duration_m') {
+      if (v !== '' && Number(v) > 59) v = '59';
+    }
+    setForm((p) => ({ ...p, [name]: v }));
+  };
+
+  // Gabungkan Jam + Menit menjadi desimal (mis. 2 jam 30 menit -> 2.5) untuk dikirim ke backend
+  const getDurationHoursDecimal = () => {
+    const h = Number(form.duration_h) || 0;
+    const m = Number(form.duration_m) || 0;
+    return h + m / 60;
+  };
 
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
@@ -77,6 +113,12 @@ const SubmitReportModal = ({ ticket, report, onSuccess, onClose }) => {
       return;
     }
 
+    const durationDecimal = getDurationHoursDecimal();
+    if (durationDecimal <= 0) {
+      setError('Durasi pengerjaan wajib diisi (jam dan/atau menit).');
+      return;
+    }
+
     setIsSubmitting(true);
     setError('');
 
@@ -85,7 +127,7 @@ const SubmitReportModal = ({ ticket, report, onSuccess, onClose }) => {
       const fd = new FormData();
       fd.append('description', form.description);
       fd.append('action_taken', form.action_taken);
-      fd.append('duration_hours', Number(form.duration_hours));
+      fd.append('duration_hours', durationDecimal);
       if (form.notes) fd.append('notes', form.notes);
 
       const imageFile = base64ToFile(image, `bukti-tiket-${ticket.id}.jpg`);
@@ -103,17 +145,6 @@ const SubmitReportModal = ({ ticket, report, onSuccess, onClose }) => {
   // Input polos yang duduk DI DALAM kartu beraksen warna (bukan lagi kotak bordered sendiri)
   const fieldInputCls = "w-full bg-white/70 dark:bg-stone-900/40 border border-stone-200/70 dark:border-stone-700/50 rounded-lg px-3 py-2.5 text-sm text-stone-800 dark:text-white placeholder:text-stone-400 focus:ring-2 focus:ring-offset-0 outline-none transition-all";
   const inputDisabledCls = "w-full px-3 py-2.5 rounded-lg border border-stone-200/70 dark:border-stone-700/50 bg-white/40 dark:bg-stone-900/20 text-stone-500 dark:text-stone-400 text-sm cursor-not-allowed";
-
-  // Kartu aksen: border kiri tebal berwarna + tint background lembut, mengikuti gaya "Dokumen Hasil Pemeliharaan"
-  const AccentField = ({ color, icon: Icon, label, required, children }) => (
-    <div className={`rounded-xl border border-stone-200 dark:border-stone-800 border-l-4 border-l-${color}-400 bg-${color}-50/50 dark:bg-${color}-900/10 p-3.5`}>
-      <label className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest mb-2 text-${color}-700 dark:text-${color}-400`}>
-        <Icon size={13} />
-        {label} {required && <span className="text-red-500 normal-case">*</span>}
-      </label>
-      {children}
-    </div>
-  );
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -192,22 +223,37 @@ const SubmitReportModal = ({ ticket, report, onSuccess, onClose }) => {
             />
           </AccentField>
 
-          {/* Durasi - kartu solid biru, seperti kartu "Durasi" di riwayat */}
+          {/* Durasi - kartu solid biru, format Jam & Menit */}
           <div className="rounded-xl bg-blue-50 dark:bg-blue-900/20 p-3.5">
             <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest mb-2 text-blue-700 dark:text-blue-400">
-              <Clock size={13} /> Durasi Pengerjaan (jam) <span className="text-red-500 normal-case">*</span>
+              <Clock size={13} /> Durasi Pengerjaan <span className="text-red-500 normal-case">*</span>
             </label>
-            <input 
-              type="number" 
-              name="duration_hours" 
-              required 
-              min="0.1" 
-              step="0.1" 
-              value={form.duration_hours} 
-              onChange={handleChange} 
-              placeholder="Contoh: 2.5" 
-              className={`${fieldInputCls} focus:border-blue-400 focus:ring-blue-500/20 font-bold text-blue-700 dark:text-blue-300`}
-            />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  name="duration_h"
+                  value={form.duration_h}
+                  onChange={handleDurationChange}
+                  placeholder="0"
+                  className={`${fieldInputCls} focus:border-blue-400 focus:ring-blue-500/20 font-bold text-blue-700 dark:text-blue-300 text-center`}
+                />
+                <p className="text-[11px] text-blue-500 text-center mt-1 font-semibold">Jam</p>
+              </div>
+              <div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  name="duration_m"
+                  value={form.duration_m}
+                  onChange={handleDurationChange}
+                  placeholder="0"
+                  className={`${fieldInputCls} focus:border-blue-400 focus:ring-blue-500/20 font-bold text-blue-700 dark:text-blue-300 text-center`}
+                />
+                <p className="text-[11px] text-blue-500 text-center mt-1 font-semibold">Menit</p>
+              </div>
+            </div>
           </div>
 
           {/* Catatan - aksen netral abu-abu */}
