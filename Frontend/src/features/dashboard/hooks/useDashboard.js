@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { dashboardService } from '../services/dashboardService';
+import { ticketService } from '../../tickets/services/ticketService';
 
 const useDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -15,7 +16,20 @@ const useDashboard = () => {
         if (!data) {
           throw new Error('Format data yang diterima dari server tidak valid.');
         }
-        setDashboardData(data);
+
+        const rawTickets = data.latest_tickets || [];
+        const enrichedTickets = await Promise.all(
+          rawTickets.map(async (ticket) => {
+            try {
+              const detail = await ticketService.getTicketById(ticket.id);
+              return { ...ticket, priority: detail?.priority };
+            } catch {
+              return ticket;
+            }
+          })
+        );
+
+        setDashboardData({ ...data, latest_tickets: enrichedTickets });
       } catch (err) {
         setError(err.message || err.response?.data?.message || 'Gagal memuat data dashboard.');
       } finally {

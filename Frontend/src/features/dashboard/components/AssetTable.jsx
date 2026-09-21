@@ -1,6 +1,29 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Clock, Wrench } from 'lucide-react';
+import { AlertTriangle, Clock, Wrench, Filter } from 'lucide-react';
+
+const SEVERITY_CONFIG = {
+  critical: { label: 'Critical', order: 0, style: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  warning:  { label: 'Warning',  order: 1, style: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+  normal:   { label: 'Normal',   order: 2, style: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+};
+
+const normalizeSeverity = (raw) => {
+  const s = String(raw || '').trim().toLowerCase();
+  if (s === 'h' || s.startsWith('high') || s.startsWith('crit')) return 'critical';
+  if (s === 'm' || s.startsWith('med') || s.startsWith('warn')) return 'warning';
+  return 'normal';
+};
+
+const SeverityBadge = ({ priority }) => {
+  const key = normalizeSeverity(priority);
+  const cfg = SEVERITY_CONFIG[key];
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${cfg.style}`}>
+      {cfg.label}
+    </span>
+  );
+};
 
 const STATUS_CONFIG = {
   WaitingAssignment: { label: 'Belum Ditugaskan', style: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
@@ -29,8 +52,24 @@ const formatDate = (isoString) => {
 
 const AssetTable = ({ title, data = [], type = 'critical' }) => {
   const navigate = useNavigate();
+  const [severityFilter, setSeverityFilter] = useState('all');
 
-  if (data.length === 0) {
+  const displayData = useMemo(() => {
+    if (type !== 'latest') return data;
+
+    const active = data.filter((ticket) => ticket.status !== 'Done');
+
+    const filtered = severityFilter === 'all'
+      ? active
+      : active.filter((ticket) => normalizeSeverity(ticket.priority) === severityFilter);
+
+    return [...filtered].sort(
+      (a, b) => SEVERITY_CONFIG[normalizeSeverity(a.priority)].order
+              - SEVERITY_CONFIG[normalizeSeverity(b.priority)].order
+    );
+  }, [data, type, severityFilter]);
+
+  if (displayData.length === 0) {
     return (
       <div className="bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 rounded-2xl p-5 shadow-sm">
         <h3 className="text-sm font-bold text-stone-800 dark:text-stone-200 mb-3">{title}</h3>
@@ -50,9 +89,26 @@ const AssetTable = ({ title, data = [], type = 'critical' }) => {
           {type === 'latest'      && <Clock size={16} className="text-blue-500" />}
           {title}
         </h3>
-        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400">
-          {data.length} item
-        </span>
+        <div className="flex items-center gap-2">
+          {type === 'latest' && (
+            <div className="flex items-center gap-1.5 text-stone-400 dark:text-stone-500">
+              <Filter size={13} />
+              <select
+                value={severityFilter}
+                onChange={(e) => setSeverityFilter(e.target.value)}
+                className="text-xs font-semibold bg-transparent border border-stone-200 dark:border-stone-700 rounded-lg px-2 py-1 text-stone-600 dark:text-stone-300 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              >
+                <option value="all">Semua Tingkat</option>
+                <option value="critical">Critical</option>
+                <option value="warning">Warning</option>
+                <option value="normal">Normal</option>
+              </select>
+            </div>
+          )}
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400">
+            {displayData.length} item
+          </span>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -68,7 +124,7 @@ const AssetTable = ({ title, data = [], type = 'critical' }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
-              {data.map((ticket) => (
+              {displayData.map((ticket) => (
                 <tr
                   key={ticket.id}
                   className="hover:bg-stone-50/80 dark:hover:bg-stone-800/50 transition-colors cursor-pointer group"
@@ -77,8 +133,8 @@ const AssetTable = ({ title, data = [], type = 'critical' }) => {
                   <td className="px-5 py-3.5 text-sm font-medium text-stone-800 dark:text-stone-200 group-hover:text-blue-600 transition-colors">
                     {ticket.machine_name}
                   </td>
-                  <td className="px-5 py-3.5 text-xs text-stone-600 dark:text-stone-300 max-w-[120px] truncate">
-                    {ticket.type}
+                  <td className="px-5 py-3.5">
+                    <SeverityBadge priority={ticket.priority} />
                   </td>
                   <td className="px-5 py-3.5">
                     <StatusBadge status={ticket.status} />
@@ -99,7 +155,7 @@ const AssetTable = ({ title, data = [], type = 'critical' }) => {
               <tr className="border-b border-stone-100 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-800/30 text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-300">
                 <th className="px-5 py-3">Mesin</th>
                 <th className="px-5 py-3 text-right">
-                  {type === 'critical' ? 'RUL (Hari)' : 'Jumlah Kerusakan'}
+                  {type === 'critical' ? 'RUL' : 'Jumlah Kerusakan'}
                 </th>
               </tr>
             </thead>

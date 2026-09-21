@@ -93,7 +93,7 @@ const DashboardPage = () => {
             />
             <div className="xl:col-span-2">
               <AssetTable
-                title="10 Tiket Pemeliharaan Terbaru"
+                title="Daftar Tiket Pemeliharaan Terbaru"
                 data={dashboardData?.latest_tickets ?? []}
                 type="latest"
               />
