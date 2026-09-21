@@ -10,40 +10,12 @@ const STATUS_COLOR = {
   Active:            '#10b981',
   Maintenance:       '#f59e0b',
   Onduty:            '#3b82f6',
-  Done:              '#22c55e',
+  Done:              '#10b981',
   InProgress:        '#3b82f6',
-  Assigned:          '#06b6d4', 
-  Rejected:          '#f43f5e', 
-  WaitingAssignment: '#eab308', 
+  Assigned:          '#8b5cf6',
+  Rejected:          '#ef4444',
+  WaitingAssignment: '#f59e0b',
   WaitingApproval:   '#f97316',
-};
-
-const STATUS_LABEL = {
-  WaitingAssignment: 'Belum Ditugaskan',
-  Assigned:          'Ditugaskan',
-  InProgress:        'Sedang Dikerjakan',
-  WaitingApproval:   'Menunggu Approval',
-  Rejected:          'Ditolak / Perlu Revisi',
-  Done:              'Selesai',
-};
-
-const TICKET_STATUS_ORDER = [
-  'WaitingAssignment',
-  'Assigned',
-  'InProgress',
-  'WaitingApproval',
-  'Rejected',
-  'Done',
-];
-
-const sortByTicketWorkflow = (data) => {
-  return [...data].sort((a, b) => {
-    const idxA = TICKET_STATUS_ORDER.indexOf(a.status);
-    const idxB = TICKET_STATUS_ORDER.indexOf(b.status);
-    // Status yang tidak dikenal (di luar daftar) ditaruh di akhir, bukan didepan
-    return (idxA === -1 ? TICKET_STATUS_ORDER.length : idxA) -
-           (idxB === -1 ? TICKET_STATUS_ORDER.length : idxB);
-  });
 };
 const FAILURE_COLORS = ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16'];
 
@@ -69,27 +41,37 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
+// Menampilkan label persentase di tengah setiap potongan donut chart
+const renderPercentLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+  if (!percent) return null;
+
+  const RADIAN = Math.PI / 180;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="#fff"
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontSize={11}
+      fontWeight={700}
+      style={{ pointerEvents: 'none' }}
+    >
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+};
+
 // Komponen kustom untuk membungkus teks ke bawah dengan jarak vertikal yang aman dari garis
 const RenderCustomTick = ({ x, y, payload }) => {
   if (!payload || !payload.value) return null;
-
-  // Label sudah dalam Bahasa Indonesia (berspasi, contoh: "Sedang Dikerjakan"),
-  // jadi dipecah per spasi. Fallback ke pemecahan PascalCase untuk jaga-jaga
-  // kalau suatu saat dataKey berisi enum mentah tanpa spasi (mis. "InProgress").
-  const rawWords = payload.value.includes(' ')
-    ? payload.value.split(' ')
-    : (payload.value.match(/[A-Z][a-z]+/g) || [payload.value]);
-
-  // Gabungkan token "/" berdiri sendiri ke kata berikutnya, supaya "Ditolak / Revisi"
-  // tidak menghasilkan baris terpisah cuma berisi "/"
-  const words = rawWords.reduce((acc, word) => {
-    if (word === '/' && acc.length > 0) {
-      acc[acc.length - 1] = `${acc[acc.length - 1]} /`;
-    } else {
-      acc.push(word);
-    }
-    return acc;
-  }, []);
+  
+  // Memecah teks berdasarkan huruf kapital (contoh: "InProgress" -> ["In", "Progress"])
+  const words = payload.value.match(/[A-Z][a-z]+/g) || [payload.value];
 
   return (
     <g transform={`translate(${x},${y})`}>
@@ -142,13 +124,10 @@ const TrendCard = ({
     total: Number(item.total),
   }));
 
-  const formattedTicketStatus = sortByTicketWorkflow(
-    ticketStatus.map((item) => ({
-      ...item,
-      total: Number(item.total),
-      label: STATUS_LABEL[item.status] || item.status, // fallback ke enum asli jika belum dipetakan
-    }))
-  );
+  const formattedTicketStatus = ticketStatus.map((item) => ({
+    ...item,
+    total: Number(item.total),
+  }));
 
   return (
     <div className="space-y-6">
@@ -170,6 +149,8 @@ const TrendCard = ({
                   outerRadius={65}
                   innerRadius={35}
                   paddingAngle={3}
+                  label={renderPercentLabel}
+                  labelLine={false}
                 >
                   {formattedMachineStatus.map((entry, i) => (
                     <Cell
@@ -202,6 +183,8 @@ const TrendCard = ({
                   outerRadius={65}
                   innerRadius={35}
                   paddingAngle={3}
+                  label={renderPercentLabel}
+                  labelLine={false}
                 >
                   {formattedEngineerStatus.map((entry, i) => (
                     <Cell
@@ -223,18 +206,33 @@ const TrendCard = ({
               Belum ada data status tiket.
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              {/* Mengatur bottom margin ke 30 agar ada ruang ekstra untuk baris teks kedua */}
-              <BarChart data={formattedTicketStatus} margin={{ top: 10, right: 10, left: -20, bottom: 30 }}>
+            <ResponsiveContainer width="100%" height={220}>
+              {/* Mengatur bottom margin agar ada ruang ekstra untuk baris teks kedua & keterangan sumbu X */}
+              <BarChart data={formattedTicketStatus} margin={{ top: 10, right: 10, left: 5, bottom: 40 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                 <XAxis 
-                  dataKey="label" 
+                  dataKey="status" 
                   interval={0} 
-                  height={50}
+                  height={55}
                   tickLine={false} // Menyembunyikan garis penunjuk kecil bawaan agar terlihat bersih
                   tick={<RenderCustomTick />}
+                  label={{
+                    value: 'Status Tiket',
+                    position: 'insideBottom',
+                    offset: -5,
+                    style: { fontSize: 11, fontWeight: 600, fill: '#57534e' },
+                  }}
                 />
-                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                <YAxis
+                  tick={{ fontSize: 11 }}
+                  allowDecimals={false}
+                  label={{
+                    value: 'Jumlah Tiket',
+                    angle: -90,
+                    position: 'insideLeft',
+                    style: { fontSize: 11, fontWeight: 600, fill: '#57534e', textAnchor: 'middle' },
+                  }}
+                />
                 <Tooltip />
                 <Bar dataKey="total" radius={[4, 4, 0, 0]}>
                   {formattedTicketStatus.map((entry, i) => (
@@ -258,11 +256,29 @@ const TrendCard = ({
                 Belum ada data pemeliharaan bulanan.
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={220}>
-                <LineChart data={formattedMonthly} margin={{ top: 10, right: 16, left: -16, bottom: 0 }}>
+              <ResponsiveContainer width="100%" height={240}>
+                <LineChart data={formattedMonthly} margin={{ top: 10, right: 16, left: 5, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-                  <XAxis dataKey="formattedMonth" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                  <XAxis
+                    dataKey="formattedMonth"
+                    tick={{ fontSize: 11 }}
+                    label={{
+                      value: 'Bulan',
+                      position: 'insideBottom',
+                      offset: -5,
+                      style: { fontSize: 11, fontWeight: 600, fill: '#57534e' },
+                    }}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11 }}
+                    allowDecimals={false}
+                    label={{
+                      value: 'Jumlah Tiket',
+                      angle: -90,
+                      position: 'insideLeft',
+                      style: { fontSize: 11, fontWeight: 600, fill: '#57534e', textAnchor: 'middle' },
+                    }}
+                  />
                   <Tooltip content={<CustomTooltip />} />
                   <Line
                     type="monotone"
@@ -286,15 +302,36 @@ const TrendCard = ({
                 Belum ada data jenis kerusakan.
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={Math.max(180, failureData.length * 42)}>
+              <ResponsiveContainer width="100%" height={Math.max(200, failureData.length * 42 + 20)}>
                 <BarChart
                   data={failureData}
                   layout="vertical"
-                  margin={{ top: 4, right: 24, left: 8, bottom: 4 }}
+                  margin={{ top: 4, right: 24, left: 8, bottom: 24 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
-                  <YAxis type="category" dataKey="type" tick={{ fontSize: 11 }} width={160} />
+                  <XAxis
+                    type="number"
+                    tick={{ fontSize: 11 }}
+                    allowDecimals={false}
+                    label={{
+                      value: 'Jumlah Kejadian',
+                      position: 'insideBottom',
+                      offset: -5,
+                      style: { fontSize: 11, fontWeight: 600, fill: '#57534e' },
+                    }}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="type"
+                    tick={{ fontSize: 11 }}
+                    width={160}
+                    label={{
+                      value: 'Jenis Kerusakan',
+                      angle: -90,
+                      position: 'insideLeft',
+                      style: { fontSize: 11, fontWeight: 600, fill: '#57534e', textAnchor: 'middle' },
+                    }}
+                  />
                   <Tooltip formatter={(val) => [val, 'Kejadian']} />
                   <Bar dataKey="total" radius={[0, 6, 6, 0]} barSize={22}>
                     {failureData.map((entry, i) => (

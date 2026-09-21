@@ -155,7 +155,11 @@ const AssetTable = ({ title, data = [], type = 'critical' }) => {
               <tr className="border-b border-stone-100 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-800/30 text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-300">
                 <th className="px-5 py-3">Mesin</th>
                 <th className="px-5 py-3 text-right">
+<<<<<<< HEAD
                   {type === 'critical' ? 'RUL' : 'Jumlah Kerusakan'}
+=======
+                  {type === 'critical' ? 'Sisa Umur (RUL)' : 'Jumlah Kerusakan'}
+>>>>>>> 0c118e3 (Update keterangan sumbu X dan Y pada dashboard)
                 </th>
               </tr>
             </thead>
@@ -172,20 +176,32 @@ const AssetTable = ({ title, data = [], type = 'critical' }) => {
                   {type === 'critical' ? (
                     <td className="px-5 py-3.5 text-right">
                       {item.rul_days != null ? (() => {
-                        const days     = Number(item.rul_days);
-                        const hours    = Math.round(days * 24);
-                        const label    = days < 1 ? `${hours} jam` : `${Math.round(days)} hari`;
-                        const isKritis = days <= 3;
+                        const days  = Number(item.rul_days);
+                        const hours = Math.round(days * 24);
+                        const label = days < 1 ? `${hours} jam` : `${Math.round(days)} hari`;
+
+                        // Ambang status disamakan dengan pipeline model ML (Test.ipynb):
+                        // < 7 hari -> CRITICAL/URGENT, 7-29 hari -> CRITICAL/HIGH,
+                        // 30-59 hari -> WARNING, >=60 hari -> NORMAL
+                        let badge = null;
+                        let colorClass = 'text-stone-600 bg-stone-100 dark:bg-stone-800 dark:text-stone-300';
+                        if (days < 7) {
+                          badge = 'Mendesak!';
+                          colorClass = 'text-red-600 bg-red-50 dark:bg-red-950/40';
+                        } else if (days < 30) {
+                          badge = 'Kritis!';
+                          colorClass = 'text-red-600 bg-red-50 dark:bg-red-950/40';
+                        } else if (days < 60) {
+                          badge = 'Waspada';
+                          colorClass = 'text-amber-600 bg-amber-50 dark:bg-amber-950/40';
+                        }
+
                         return (
-                          <span className={`font-bold text-sm px-2.5 py-1 rounded-lg ${
-                            isKritis
-                              ? 'text-red-600 bg-red-50 dark:bg-red-950/40'
-                              : 'text-amber-600 bg-amber-50 dark:bg-amber-950/40'
-                          }`}>
+                          <span className={`font-bold text-sm px-2.5 py-1 rounded-lg ${colorClass}`}>
                             {label}
-                            {isKritis && (
+                            {badge && (
                               <span className="ml-1.5 text-[10px] bg-red-100 dark:bg-red-900/40 px-1.5 py-0.5 rounded-full">
-                                Kritis!
+                                {badge}
                               </span>
                             )}
                           </span>
